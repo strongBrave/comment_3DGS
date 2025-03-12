@@ -59,7 +59,7 @@ class GaussianModel:
         self.spatial_lr_scale = 0 #初始化空间学习速率缩放为0。
         self.setup_functions() #调用 setup_functions 方法设置各种激活和变换函数
 
-    def capture(self):
+    def capture(self):        
         return (
             self.active_sh_degree,
             self._xyz,
@@ -107,8 +107,8 @@ class GaussianModel:
     
     @property
     def get_features(self):
-        features_dc = self._features_dc
-        features_rest = self._features_rest
+        features_dc = self._features_dc # self._features_dc：(N, 1, 3)，仅包含零阶项。
+        features_rest = self._features_rest # self._features_rest：(N, K-1, 3)，包含高阶项。
         return torch.cat((features_dc, features_rest), dim=1)
     
     @property
@@ -261,8 +261,8 @@ class GaussianModel:
         for group in self.optimizer.param_groups:
             if group["name"] == name:
                 stored_state = self.optimizer.state.get(group['params'][0], None)
-                stored_state["exp_avg"] = torch.zeros_like(tensor)
-                stored_state["exp_avg_sq"] = torch.zeros_like(tensor)
+                stored_state["exp_avg"] = torch.zeros_like(tensor) # Adam 的一阶张量和二阶张量
+                stored_state["exp_avg_sq"] = torch.zeros_like(tensor) 
 
                 del self.optimizer.state[group['params'][0]]
                 group["params"][0] = nn.Parameter(tensor.requires_grad_(True))
@@ -363,7 +363,7 @@ class GaussianModel:
         # 为每个点生成新的样本，其中 stds 是点的缩放，means 是均值。
         stds = self.get_scaling[selected_pts_mask].repeat(N,1)
         means =torch.zeros((stds.size(0), 3),device="cuda")
-        samples = torch.normal(mean=means, std=stds) #使用均值和标准差生成样本。
+        samples = torch.normal(mean=means, std=stds) #使用均值和标准差生成样本。(N, 3)
         rots = build_rotation(self._rotation[selected_pts_mask]).repeat(N,1,1) #为每个点构建旋转矩阵，并将其重复 N 次。
         new_xyz = torch.bmm(rots, samples.unsqueeze(-1)).squeeze(-1) + self.get_xyz[selected_pts_mask].repeat(N, 1) #将旋转后的样本点添加到原始点的位置。
         new_scaling = self.scaling_inverse_activation(self.get_scaling[selected_pts_mask].repeat(N,1) / (0.8*N)) #生成新的缩放参数。

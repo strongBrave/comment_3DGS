@@ -338,7 +338,8 @@ renderCUDA(
 			break;
 		
 		// 共享内存中获取点云数据：
-		// 每个线程通过索引 progress 计算要加载的点云数据的索引 coll_id，然后从全局内存中加载到共享内存 collected_id、collected_xy 和 collected_conic_opacity 中。block.sync() 确保所有线程都加载完成。
+		// 每个线程通过索引 progress 计算要加载的点云数据的索引 coll_id，
+		// 然后从全局内存中加载到共享内存 collected_id、collected_xy 和 collected_conic_opacity 中。block.sync() 确保所有线程都加载完成。
 		// Collectively fetch per-Gaussian data from global to shared
 		int progress = i * BLOCK_SIZE + block.thread_rank();
 		if (range.x + progress < range.y)
